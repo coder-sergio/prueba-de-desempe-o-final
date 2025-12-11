@@ -1,0 +1,67 @@
+datasource db {
+  provider = "mysql"
+  // url se gestiona en prisma.config.ts
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  CLIENT
+  AGENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model User {
+  id              Int      @id @default(autoincrement())
+  name            String
+  email           String   @unique
+  password        String   // por simplicidad; ideal: hash
+  role            Role     @default(CLIENT)
+  createdAt       DateTime @default(now())
+  ticketsCreated  Ticket[] @relation("TicketsCreated")
+  ticketsAssigned Ticket[] @relation("TicketsAssigned")
+  comments        Comment[]
+}
+
+model Ticket {
+  id           Int           @id @default(autoincrement())
+  title        String
+  description  String
+  status       TicketStatus   @default(OPEN)
+  priority     TicketPriority @default(MEDIUM)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  createdBy    User           @relation("TicketsCreated", fields: [createdById], references: [id])
+  createdById  Int
+  assignedTo   User?          @relation("TicketsAssigned", fields: [assignedToId], references: [id])
+  assignedToId Int?
+
+  comments     Comment[]
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  message   String
+  createdAt DateTime @default(now())
+
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  ticketId  Int
+
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  Int
+}
